@@ -1,11 +1,11 @@
 package openaisdk
 
 import (
-	"fmt"
-	"net/http"
-	"encoding/json"
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"net/http"
 )
 
 type Message struct {
@@ -17,14 +17,14 @@ type APIClient struct {
 	APIKey string
 }
 
-func (c *APIclient) CreateChatCompletion(model string, messages []Message) {
+func (c *APIClient) CreateChatCompletion(model string, messages []Message) []byte {
 	// URL for the openai's endpoint is set here
 	apiURL := "https://api.openai.com/v1/chat/completions"
 
 	// This is the payload of the API request
 	payload := struct {
-		Model		string		'json:"model"'
-		Messages	[]Message	'json:"messages"'
+		Model    string    `json:"model"`
+		Messages []Message `json:"messages"`
 	}{
 		Model:    model,
 		Messages: messages,
@@ -35,18 +35,18 @@ func (c *APIclient) CreateChatCompletion(model string, messages []Message) {
 	payloadJSON, err := json.Marshal(payload)
 	if err != nil {
 		fmt.Println("Error marshaling JSON:", err)
-		return
+		return nil
 	}
 
 	// Request object "req" is created
 	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(payloadJSON))
 	if err != nil {
 		fmt.Println("Error forming the API request: ", err)
-		return
+		return nil
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", '"Bearer"+c.APIkey')
+	req.Header.Set("Authorization", "Bearer "+c.APIKey)
 
 	// HTTP client is created
 	client := http.Client{}
@@ -54,15 +54,15 @@ func (c *APIclient) CreateChatCompletion(model string, messages []Message) {
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println("Error executing API request: ", err)
-		return
+		return nil
 	}
-	defer resp.Body.Close
+	defer resp.Body.Close()
 
 	// Response's content is read to a variable
 	responseBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("Error reading response body: ", err)
-		return
+		return nil
 	}
 
 	return responseBody
