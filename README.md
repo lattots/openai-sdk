@@ -2,13 +2,13 @@
 
 This is an SDK for OpenAI's ChatCompletion API. It offers tools for doing API requests to execute chat completions.
 
-##Chat Completions:
+## Chat Completions:
 1. Create openaisdk APIClient instance. You will have to pass your API key here
 2. Create chat conversation that you want the model to complete
 3. Call the CreateChatCompletion method with desired AI model and chat conversation (messages) as arguments
 4. Parse the response to desired format
 
-###Example:
+### Example:
 
 	// Create an instance of the APIClient from your SDK
 	client := openaisdk.APIClient{APIKey: yourAPIKey}
@@ -28,12 +28,12 @@ This is an SDK for OpenAI's ChatCompletion API. It offers tools for doing API re
 	// Call the CreateChatCompletion method from your SDK
 	responseBody := client.CreateChatCompletion("gpt-3.5-turbo", messages)
 
-##Vector Embeddings
+## Vector Embeddings
 1. Create openaisdk APIClient instance. You will have to pass your API key here
 2. Call the CreateVectorEmbedding method with desired AI model and text to be embedded as arguments
 3. Parse the response to desired format
 
-###Example:
+### Example:
 
 	// Create an instance of the APIClient from your SDK
 	client := openaisdk.APIClient{APIKey: yourAPIKey}
