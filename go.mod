@@ -1,3 +1,3 @@
 module github.com/lattots/openai-sdk
 
-go 1.18
+go 1.21.3
