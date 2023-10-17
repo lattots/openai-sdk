@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 )
 
@@ -17,7 +17,40 @@ type APIClient struct {
 	APIKey string
 }
 
-func (c *APIClient) CreateChatCompletion(model string, messages []Message) []byte {
+type choice struct {
+	Index        int     `json:"index"`
+	Message      Message `json:"message"`
+	FinishReason string  `json:"finish_reason"`
+}
+
+type usage struct {
+	PromptTokens int `json:"prompt_tokens"`
+	TotalTokens  int `json:"total_tokens"`
+}
+
+type ChatResponse struct {
+	Id      string   `json:"id"`
+	Object  string   `json:"object"`
+	Created int      `json:"created"`
+	Model   string   `json:"model"`
+	Choices []choice `json:"choices"`
+	Usage   usage    `json:"usage"`
+}
+
+type data struct {
+	Object    string    `json:"object"`
+	Embedding []float64 `json:"embedding"`
+	Index     int
+}
+
+type EmbeddingResponse struct {
+	Object string `json:"object"`
+	Data   []data `json:"data"`
+	Model  string `json:"model"`
+	Usage  usage  `json:"usage"`
+}
+
+func (c *APIClient) CreateChatCompletion(model string, messages []Message) (ChatResponse, error) {
 	// URL for the openai's endpoint is set here
 	apiURL := "https://api.openai.com/v1/chat/completions"
 
@@ -35,14 +68,14 @@ func (c *APIClient) CreateChatCompletion(model string, messages []Message) []byt
 	payloadJSON, err := json.Marshal(payload)
 	if err != nil {
 		fmt.Println("Error marshaling JSON:", err)
-		return nil
+		return ChatResponse{}, err
 	}
 
 	// Request object "req" is created
 	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(payloadJSON))
 	if err != nil {
 		fmt.Println("Error forming the API request: ", err)
-		return nil
+		return ChatResponse{}, err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -54,21 +87,29 @@ func (c *APIClient) CreateChatCompletion(model string, messages []Message) []byt
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println("Error executing API request: ", err)
-		return nil
+		return ChatResponse{}, err
 	}
 	defer resp.Body.Close()
 
 	// Response's content is read to a variable
-	responseBody, err := ioutil.ReadAll(resp.Body)
+	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("Error reading response body: ", err)
-		return nil
+		return ChatResponse{}, err
 	}
 
-	return responseBody
+	// This is the response that is returned
+	var response ChatResponse
+	err = json.Unmarshal(responseBody, &response)
+	if err != nil {
+		fmt.Println("Error unmarshalling the response: ", err)
+		return ChatResponse{}, err
+	}
+
+	return response, nil
 }
 
-func (c *APIClient) CreateVectorEmbedding(model string, text string) []byte {
+func (c *APIClient) CreateVectorEmbedding(model string, text string) (EmbeddingResponse, error) {
 	// URL for the openai's endpoint is set here
 	apiURL := "https://api.openai.com/v1/embeddings"
 
@@ -86,14 +127,14 @@ func (c *APIClient) CreateVectorEmbedding(model string, text string) []byte {
 	payloadJSON, err := json.Marshal(payload)
 	if err != nil {
 		fmt.Println("Error marshaling JSON:", err)
-		return nil
+		return EmbeddingResponse{}, err
 	}
 
 	// Request object "req" is created
 	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(payloadJSON))
 	if err != nil {
 		fmt.Println("Error forming the API request: ", err)
-		return nil
+		return EmbeddingResponse{}, err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -105,16 +146,23 @@ func (c *APIClient) CreateVectorEmbedding(model string, text string) []byte {
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println("Error executing API request: ", err)
-		return nil
+		return EmbeddingResponse{}, err
 	}
 	defer resp.Body.Close()
 
 	// Response's content is read to a variable
-	responseBody, err := ioutil.ReadAll(resp.Body)
+	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("Error reading response body: ", err)
-		return nil
+		return EmbeddingResponse{}, err
 	}
 
-	return responseBody
+	var response EmbeddingResponse
+	err = json.Unmarshal(responseBody, &response)
+	if err != nil {
+		fmt.Println("Error unmarshalling the response: ", err)
+		return EmbeddingResponse{}, err
+	}
+
+	return response, nil
 }
