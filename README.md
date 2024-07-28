@@ -17,9 +17,9 @@ messages := []Message{
     {
         Role: "user",
         Content: []Content{
-			// Message can have just a single text content
+    // Message can have just a single text content
             NewTextContent("What's in this image?"),
-			// Message can have multiple image contents
+    // Message can have multiple image contents
             NewImageContent("https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"),
         },
     },
