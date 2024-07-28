@@ -8,19 +8,75 @@ import (
 	"net/http"
 )
 
+// ContentType represents the type of content in the message
+type ContentType string
+
+const (
+	TextType  ContentType = "text"
+	ImageType ContentType = "image_url"
+)
+
+// TextContent represents text content in the message
+type TextContent struct {
+	Type ContentType `json:"type"`
+	Text string      `json:"text,omitempty"`
+}
+
+// ImageContent represents image URL content in the message
+type ImageContent struct {
+	Type     ContentType `json:"type"`
+	ImageUrl ImageUrl    `json:"image_url,omitempty"`
+}
+
+type ImageUrl struct {
+	Url string `json:"url"`
+}
+
+// Message represents a message in the conversation
 type Message struct {
+	Role    string    `json:"role"`
+	Content []Content `json:"content"`
+}
+
+// Content represents either text or image content
+type Content interface{}
+
+func NewTextContent(text string) TextContent {
+	return TextContent{
+		Type: TextType,
+		Text: text,
+	}
+}
+
+func NewImageContent(url string) ImageContent {
+	return ImageContent{
+		Type:     ImageType,
+		ImageUrl: ImageUrl{Url: url},
+	}
+}
+
+// APIClient represents a client for OpenAI API
+type APIClient struct {
+	APIKey string
+	APIURL string
+}
+
+func NewAPIClient(apiKey string) *APIClient {
+	return &APIClient{
+		APIKey: apiKey,
+		APIURL: "https://api.openai.com/v1",
+	}
+}
+
+type responseMessage struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
 }
 
-type APIClient struct {
-	APIKey string
-}
-
 type choice struct {
-	Index        int     `json:"index"`
-	Message      Message `json:"message"`
-	FinishReason string  `json:"finish_reason"`
+	Index        int             `json:"index"`
+	Message      responseMessage `json:"message"`
+	FinishReason string          `json:"finish_reason"`
 }
 
 type usage struct {
@@ -50,70 +106,60 @@ type EmbeddingResponse struct {
 	Usage  usage  `json:"usage"`
 }
 
-func (c *APIClient) CreateChatCompletion(model string, messages []Message) (ChatResponse, error) {
-	// URL for the openai's endpoint is set here
-	apiURL := "https://api.openai.com/v1/chat/completions"
+func (c *APIClient) CreateChatCompletion(model string, messages []Message, maxTokens int) (ChatResponse, error) {
+	apiURL := c.APIURL + "/chat/completions"
 
-	// This is the payload of the API request
 	payload := struct {
-		Model    string    `json:"model"`
-		Messages []Message `json:"messages"`
+		Model     string    `json:"model"`
+		Messages  []Message `json:"messages"`
+		MaxTokens int       `json:"max_tokens"`
 	}{
-		Model:    model,
-		Messages: messages,
+		Model:     model,
+		Messages:  messages,
+		MaxTokens: maxTokens,
 	}
 
-	// Payload is formed to JSON
-	// This is done to pass it to openai API
 	payloadJSON, err := json.Marshal(payload)
 	if err != nil {
-		fmt.Println("Error marshaling JSON:", err)
-		return ChatResponse{}, err
+		return ChatResponse{}, fmt.Errorf("error marshaling JSON: %w", err)
 	}
 
-	// Request object "req" is created
 	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(payloadJSON))
 	if err != nil {
-		fmt.Println("Error forming the API request: ", err)
-		return ChatResponse{}, err
+		return ChatResponse{}, fmt.Errorf("error forming the API request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+c.APIKey)
 
-	// HTTP client is created
 	client := http.Client{}
-	// HTTP request is done
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Error executing API request: ", err)
-		return ChatResponse{}, err
+		return ChatResponse{}, fmt.Errorf("error executing API request: %w", err)
 	}
 	defer resp.Body.Close()
 
-	// Response's content is read to a variable
-	responseBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Error reading response body: ", err)
-		return ChatResponse{}, err
+	if resp.StatusCode != http.StatusOK {
+		return ChatResponse{}, fmt.Errorf("error executing API request: %s", resp.Status)
 	}
 
-	// This is the response that is returned
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return ChatResponse{}, fmt.Errorf("error reading response body: %w", err)
+	}
+
 	var response ChatResponse
 	err = json.Unmarshal(responseBody, &response)
 	if err != nil {
-		fmt.Println("Error unmarshalling the response: ", err)
-		return ChatResponse{}, err
+		return ChatResponse{}, fmt.Errorf("error unmarshalling the response: %w", err)
 	}
 
 	return response, nil
 }
 
 func (c *APIClient) CreateVectorEmbedding(model string, text string) (EmbeddingResponse, error) {
-	// URL for the openai's endpoint is set here
-	apiURL := "https://api.openai.com/v1/embeddings"
+	apiURL := c.APIURL + "/embeddings"
 
-	// This is the payload of the API request
 	payload := struct {
 		Input string `json:"input"`
 		Model string `json:"model"`
@@ -122,46 +168,39 @@ func (c *APIClient) CreateVectorEmbedding(model string, text string) (EmbeddingR
 		Model: model,
 	}
 
-	// Payload is formed to JSON
-	// This is done to pass it to openai API
 	payloadJSON, err := json.Marshal(payload)
 	if err != nil {
-		fmt.Println("Error marshaling JSON:", err)
-		return EmbeddingResponse{}, err
+		return EmbeddingResponse{}, fmt.Errorf("error marshaling JSON: %w", err)
 	}
 
-	// Request object "req" is created
 	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(payloadJSON))
 	if err != nil {
-		fmt.Println("Error forming the API request: ", err)
-		return EmbeddingResponse{}, err
+		return EmbeddingResponse{}, fmt.Errorf("error forming the API request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+c.APIKey)
 
-	// HTTP client is created
 	client := http.Client{}
-	// HTTP request is done
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Error executing API request: ", err)
-		return EmbeddingResponse{}, err
+		return EmbeddingResponse{}, fmt.Errorf("error executing API request: %w", err)
 	}
 	defer resp.Body.Close()
 
-	// Response's content is read to a variable
+	if resp.StatusCode != http.StatusOK {
+		return EmbeddingResponse{}, fmt.Errorf("error executing API request: %s", resp.Status)
+	}
+
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("Error reading response body: ", err)
-		return EmbeddingResponse{}, err
+		return EmbeddingResponse{}, fmt.Errorf("error reading response body: %w", err)
 	}
 
 	var response EmbeddingResponse
 	err = json.Unmarshal(responseBody, &response)
 	if err != nil {
-		fmt.Println("Error unmarshalling the response: ", err)
-		return EmbeddingResponse{}, err
+		return EmbeddingResponse{}, fmt.Errorf("error unmarshalling the response: %w", err)
 	}
 
 	return response, nil
