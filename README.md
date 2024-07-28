@@ -11,17 +11,17 @@ This is an SDK for OpenAI's Chat and Embeddings APIs. It can be used to create c
 
 ~~~go
 // Create an instance of the APIClient
-client := openaisdk.APIClient{APIKey: yourAPIKey}
+client := NewAPIClient(yourAPIKey)
 
-// Define the messages for the chat
-messages := []openaisdk.Message{
+messages := []Message{
     {
-        Role:    "system",
-        Content: "You are a helpful assistant.",
-    },
-    {
-        Role:    "user",
-        Content: "Hello!",
+        Role: "user",
+        Content: []Content{
+			// Message can have just a single text content
+            NewTextContent("What's in this image?"),
+			// Message can have multiple image contents
+            NewImageContent("https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"),
+        },
     },
 }
 
@@ -43,7 +43,7 @@ completion := response.Choices[0].Message.Content
 
 ~~~go
 // Create an instance of the APIClient
-client := openaisdk.APIClient{APIKey: yourAPIKey}
+client := NewAPIClient(yourAPIKey)
 
 text := "This is a test string for embeddings API"
 
