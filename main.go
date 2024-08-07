@@ -29,7 +29,8 @@ type ImageContent struct {
 }
 
 type ImageUrl struct {
-	Url string `json:"url"`
+	Url    string `json:"url"`
+	Detail string `json:"detail,omitempty"`
 }
 
 // Message represents a message in the conversation
@@ -48,10 +49,15 @@ func NewTextContent(text string) TextContent {
 	}
 }
 
-func NewImageContent(url string) ImageContent {
+func NewImageContent(url string, detail ...string) ImageContent {
+	// Detail parameter is provided, it is attached to request
+	var d string
+	if len(detail) == 1 {
+		d = detail[0]
+	}
 	return ImageContent{
 		Type:     ImageType,
-		ImageUrl: ImageUrl{Url: url},
+		ImageUrl: ImageUrl{Url: url, Detail: d}, // If detail is empty, it is omitted from json
 	}
 }
 

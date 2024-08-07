@@ -37,6 +37,41 @@ func TestCreateChatCompletion(t *testing.T) {
 	}
 }
 
+func TestCreateChatCompletionWithDetail(t *testing.T) {
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		t.Fatal("OPENAI_API_KEY environment variable is not set")
+	}
+	client := NewAPIClient(apiKey)
+
+	messages := []Message{
+		{
+			Role: "user",
+			Content: []Content{
+				NewTextContent("What's in this image?"),
+				NewImageContent(
+					"https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg",
+					"low",
+				),
+			},
+		},
+	}
+
+	response, err := client.CreateChatCompletion("gpt-4o-mini", messages, 300)
+	if err != nil {
+		t.Fatalf("CreateChatCompletion error: %v", err)
+	}
+	if response.Id == "" {
+		t.Errorf("Expected non-empty response ID")
+	}
+	if len(response.Choices) == 0 {
+		t.Errorf("Expected at least one choice in response")
+	}
+	if response.Choices[0].Message.Content == "" {
+		t.Errorf("Expected non-empty message content")
+	}
+}
+
 func TestCreateVectorEmbedding(t *testing.T) {
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {

@@ -17,16 +17,19 @@ messages := []Message{
     {
         Role: "user",
         Content: []Content{
-    // Message can have just a single text content
+            // Message can have just a single text content
             NewTextContent("What's in this image?"),
-    // Message can have multiple image contents
+            // Message can have multiple image contents
             NewImageContent("https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"),
+            // Image contents can specify the level of detail used for vision processing
+            // See [https://platform.openai.com/docs/guides/vision] for more info on detail
+            NewImageContent("https://example.com/image.jpeg", "low")
         },
     },
 }
 
 // Call the CreateChatCompletion method with your client
-response, err := client.CreateChatCompletion("gpt-3.5-turbo", messages)
+response, err := client.CreateChatCompletion("gpt-4o", messages)
 if err != nil {
     // Handle error
 }
