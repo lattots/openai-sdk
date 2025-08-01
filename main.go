@@ -40,7 +40,7 @@ type Message struct {
 }
 
 // Content represents either text or image content
-type Content interface{}
+type Content any
 
 func NewTextContent(text string) TextContent {
 	return TextContent{
@@ -125,12 +125,13 @@ func (c *APIClient) CreateChatCompletion(model string, messages []Message, maxTo
 		MaxTokens: maxTokens,
 	}
 
-	payloadJSON, err := json.Marshal(payload)
+	var requestBody bytes.Buffer
+	err := json.NewEncoder(&requestBody).Encode(payload)
 	if err != nil {
-		return ChatResponse{}, fmt.Errorf("error marshaling JSON: %w", err)
+		return ChatResponse{}, fmt.Errorf("error encoding JSON: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(payloadJSON))
+	req, err := http.NewRequest("POST", apiURL, &requestBody)
 	if err != nil {
 		return ChatResponse{}, fmt.Errorf("error forming the API request: %w", err)
 	}
@@ -149,15 +150,10 @@ func (c *APIClient) CreateChatCompletion(model string, messages []Message, maxTo
 		return ChatResponse{}, fmt.Errorf("error executing API request: %s", resp.Status)
 	}
 
-	responseBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return ChatResponse{}, fmt.Errorf("error reading response body: %w", err)
-	}
-
 	var response ChatResponse
-	err = json.Unmarshal(responseBody, &response)
+	err = json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
-		return ChatResponse{}, fmt.Errorf("error unmarshalling the response: %w", err)
+		return ChatResponse{}, fmt.Errorf("error decoding response body: %w", err)
 	}
 
 	return response, nil
